@@ -1,86 +1,82 @@
 import re
 
-def minimum_spanning_tree(graph, start):
-    # O(E log E)
-    mst = set()
-    visited = set([start])
-    edges = [
-        (cost, start, to)
-        for to, cost in graph[start].items()
-    ]
-    while edges:
-        edges.sort()
-        cost, frm, to = edges.pop(0)
-        if to not in visited:
-            visited.add(to)
-            mst.add((frm, to, cost))
-            for to_next, cost2 in graph[to].items():
-                if to_next not in visited:
-                    edges.append((cost2, to, to_next))
-    return mst
+
+class Graph:
+    def __init__(self, file, out_file):
+        self.file = file
+        self.out_file = out_file
+        file_data = self.read_file()
+        self.N = file_data[0]
+        self.graph = self.create_graph(file_data[1:])
+        self.pot_edges = set()
+        self.pot_negative_edges()
+        self.print_edge_count()
+        print(self.pot_edges)
+        print(self.potted_difficulty())
+        self.remove_potted_edges()
+        self.remove_branches()
+
+    def pot_negative_edges(self):
+        for node in self.graph:
+            for node1 in self.graph[node]:
+                if self.graph[node][node1] < 0:
+                    self.pot_edges.add((node, node1))
+
+    def potted_difficulty(self):
+        difficulty = 0
+        for edge in self.pot_edges:
+            difficulty += self.graph[edge[0]][edge[1]]
+        return difficulty
+
+    def remove_potted_edges(self):
+        for edge in self.pot_edges:
+            if edge[0] in self.graph and edge[1] in self.graph[edge[0]]:
+                del self.graph[edge[0]][edge[1]]
+            if edge[1] in self.graph and edge[0] in self.graph[edge[1]]:
+                del self.graph[edge[1]][edge[0]]
+
+    def remove_branches(self):
+        # Remove all branches that do not loop
+        for node in self.graph:
+            if len(self.graph[node]) == 1:
+                self.remove_branch(node)
+
+    def remove_branch(self, node):
+        # Remove the branch that starts at node
+        while len(self.graph[node]) == 1:
+            next_node = list(self.graph[node].keys())[0]
+            del self.graph[node]
+            del self.graph[next_node][node]
+            node = next_node
+
+    def create_graph(self, input_data):
+        graph = {}
+        for i in range(0, len(input_data), 3):
+            node1, node2, difficulty = int(input_data[i]), int(input_data[i + 1]), int(input_data[i + 2])
+            node1, node2 = (node1-1, node2-1)
+            if node1 not in graph:
+                graph[node1] = {}
+            if node2 not in graph:
+                graph[node2] = {}
+
+            # Add the edge in both directions, as it's an undirected graph
+            graph[node1][node2] = difficulty
+            graph[node2][node1] = difficulty
+        return graph
+
+    def read_file(self):
+        with open(self.file, 'r') as f:
+            input_data = f.read()
+            input_data = re.sub(r'[\n\r]+', ' ', input_data)
+            input_data = re.sub(r'\t+', ' ', input_data)
+            input_data = re.sub(r' +', ' ', input_data)
+        input_data = input_data.split(' ')
+        input_data = [int(i) for i in input_data]
+        return input_data
+
+    def write_file(self, result):
+        with open(self.out_file, 'w') as f:
+            f.write(str(result))
 
 
-def find_cycles(mst, N):
-    # O(V + E)
-    graph = [[] for _ in range(N)]
-    for frm, to, _ in mst:
-        graph[frm].append(to)
-        graph[to].append(frm)
-    cycle = set()
-    visited = [0]*N
-
-    def dfs(v, parent):
-        visited[v] = 1
-        for to in graph[v]:
-            if to == parent:
-                continue
-            if visited[to] == 1:
-                cycle.add((min(v, to), max(v, to)))
-            elif visited[to] == 0:
-                dfs(to, v)
-        visited[v] = 2
-
-    dfs(0, -1)
-    return cycle
-
-
-def place_honey_pots(edges, cycle):
-    # O(E)
-    dp = [0]*(len(edges)+1)
-    edges.sort(key=lambda x: x[2])
-    cycle = set(cycle)
-    for i in range(1, len(edges)+1):
-        dp[i] = dp[i-1]
-        if (edges[i-1][0], edges[i-1][1]) in cycle:
-            dp[i] = min(dp[i], dp[i-1]+edges[i-1][2])
-    return dp[-1]
-
-
-with open('in.txt', 'r') as f:
-    input_data = f.read()
-    input_data = re.sub(r'[\n\r]+', ' ', input_data)
-    input_data = re.sub(r'\t+', ' ', input_data)
-    input_data = re.sub(r' +', ' ', input_data)
-input_data = input_data.split(' ')
-input_data = [int(i) for i in input_data]
-
-N = input_data[0]
-input_data = input_data[1:]
-
-graph = {}
-while len(input_data) > 0:
-    u, v, w = input_data[:3]
-    input_data = input_data[3:]
-    u -= 1
-    v -= 1
-    if u not in graph:
-        graph[u] = {}
-    if v not in graph:
-        graph[v] = {}
-    graph[u][v] = w
-    graph[v][u] = w
-
-mst = minimum_spanning_tree(graph, 0)
-cycle = find_cycles(mst, N)
-result = place_honey_pots(list(mst), cycle)
-print(result)
+Graph('ex1.in', 'ex1.rez')

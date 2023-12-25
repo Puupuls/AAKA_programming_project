@@ -11,8 +11,6 @@ class Graph:
         self.graph = self.create_graph(file_data[1:])
         self.pot_edges = set()
         self.pot_negative_edges()
-        print(self.pot_edges)
-        print(self.potted_difficulty())
         self.remove_potted_edges()
         self.remove_branches()
         self.find_MST()
@@ -22,13 +20,14 @@ class Graph:
     def pot_negative_edges(self):
         for node in self.graph:
             for node1 in self.graph[node]:
-                if self.graph[node][node1] < 0:
+                if node < node1 and self.graph[node][node1] <= 0:
                     self.pot_edges.add((node, node1, self.graph[node][node1]))
 
     def potted_difficulty(self):
         difficulty = 0
         for edge in self.pot_edges:
             difficulty += edge[2]
+
         return difficulty
 
     def remove_potted_edges(self):
@@ -40,8 +39,8 @@ class Graph:
 
     def remove_branches(self):
         # Remove all branches that do not loop
-        for node in self.graph:
-            if len(self.graph[node]) == 1:
+        for node in list(self.graph.keys()):
+            if node in self.graph and len(self.graph[node]) == 1:
                 self.remove_branch(node)
 
     def remove_branch(self, node):
@@ -53,29 +52,26 @@ class Graph:
             node = next_node
 
     def find_MST(self):
-        # Start from an arbitrary node, let's say node 0
         start_node = 0
 
         # Initialize a priority queue
-        pq = [(0, start_node)]
+        pq = [(0, start_node, start_node)]
         in_mst = set()
-        total_weight = 0
         mst_edges = []
 
         while pq:
-            weight, node = heapq.heappop(pq)
+            weight, node, source = heapq.heappop(pq)
             if node in in_mst:
                 continue
 
             in_mst.add(node)
-            total_weight += weight
 
             if weight != 0:  # To exclude the starting node's weight
-                mst_edges.append((weight, node))
+                mst_edges.append((node, source))
 
             for adjacent, w in self.graph[node].items():
                 if adjacent not in in_mst:
-                    heapq.heappush(pq, (w, adjacent))
+                    heapq.heappush(pq, (-w, adjacent, node))
 
         self.mst_edges = mst_edges
 
@@ -123,4 +119,4 @@ class Graph:
             f.write(str(result))
 
 
-Graph('ex1.in', 'ex1.rez')
+Graph('ex3.in', 'ex3.rez')

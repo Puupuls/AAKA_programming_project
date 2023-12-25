@@ -1,3 +1,4 @@
+import heapq
 import re
 
 
@@ -10,22 +11,24 @@ class Graph:
         self.graph = self.create_graph(file_data[1:])
         self.pot_edges = set()
         self.pot_negative_edges()
-        self.print_edge_count()
         print(self.pot_edges)
         print(self.potted_difficulty())
         self.remove_potted_edges()
         self.remove_branches()
+        self.find_MST()
+        self.add_edges_not_in_MST()
+        print(self.potted_difficulty())
 
     def pot_negative_edges(self):
         for node in self.graph:
             for node1 in self.graph[node]:
                 if self.graph[node][node1] < 0:
-                    self.pot_edges.add((node, node1))
+                    self.pot_edges.add((node, node1, self.graph[node][node1]))
 
     def potted_difficulty(self):
         difficulty = 0
         for edge in self.pot_edges:
-            difficulty += self.graph[edge[0]][edge[1]]
+            difficulty += edge[2]
         return difficulty
 
     def remove_potted_edges(self):
@@ -48,6 +51,47 @@ class Graph:
             del self.graph[node]
             del self.graph[next_node][node]
             node = next_node
+
+    def find_MST(self):
+        # Start from an arbitrary node, let's say node 0
+        start_node = 0
+
+        # Initialize a priority queue
+        pq = [(0, start_node)]
+        in_mst = set()
+        total_weight = 0
+        mst_edges = []
+
+        while pq:
+            weight, node = heapq.heappop(pq)
+            if node in in_mst:
+                continue
+
+            in_mst.add(node)
+            total_weight += weight
+
+            if weight != 0:  # To exclude the starting node's weight
+                mst_edges.append((weight, node))
+
+            for adjacent, w in self.graph[node].items():
+                if adjacent not in in_mst:
+                    heapq.heappush(pq, (w, adjacent))
+
+        self.mst_edges = mst_edges
+
+    def add_edges_not_in_MST(self):
+        edges = set()
+        for e in self.mst_edges:
+            s, f = e
+            if s < f:
+                edges.add((s, f))
+            else:
+                edges.add((f, s))
+        for node in self.graph:
+            for node1 in self.graph[node]:
+                if node < node1:
+                    if (node, node1) not in edges:
+                        self.pot_edges.add((node, node1, self.graph[node][node1]))
 
     def create_graph(self, input_data):
         graph = {}

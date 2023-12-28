@@ -22,10 +22,7 @@ class Graph:
         # Laika sarežģītība O(E)
         with open(self.file, 'r') as f:
             input_data = f.read()
-            input_data = re.sub(r'[\n\r]+', ' ', input_data)
-            input_data = re.sub(r'\t+', ' ', input_data)
-            input_data = re.sub(r' +', ' ', input_data)
-        input_data = input_data.split(' ')
+        input_data = input_data.split()
         input_data = [int(i) for i in input_data]
         return input_data
 
@@ -144,4 +141,4 @@ class Graph:
                 f.write('\n')
 
 
-Graph('file.in', 'file.out')
+Graph('sample_input_2023_3.txt', 'file.out')
